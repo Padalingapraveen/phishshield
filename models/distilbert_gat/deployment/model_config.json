@@ -1,0 +1,21 @@
+{
+    "model_name": "DistilBERT + Graph Attention Network",
+    "base_model": "distilbert-base-uncased",
+    "input_dim": 768,
+    "gat_hidden": 128,
+    "gat_output": 64,
+    "heads": 4,
+    "num_classes": 2,
+    "labels": {
+        "0": "NON-PHISHING",
+        "1": "PHISHING"
+    },
+    "best_epoch": 10,
+    "test_metrics": {
+        "accuracy": 0.9978291405950709,
+        "precision": 0.9977127172918573,
+        "recall": 0.9983978027008469,
+        "f1": 0.998055142432216,
+        "roc_auc": 0.9998816566326036
+    }
+}

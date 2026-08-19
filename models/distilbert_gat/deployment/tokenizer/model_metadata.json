@@ -1,0 +1,11 @@
+{
+    "model_name": "DistilBERT",
+    "dataset": "CEAS-08",
+    "task": "Binary phishing email classification",
+    "label_mapping": {
+        "0": "NON-PHISHING",
+        "1": "PHISHING"
+    },
+    "max_sequence_length": 256,
+    "model_directory": "/content/drive/MyDrive/PhishGuard-AI/models/distilbert"
+}
