@@ -102,4 +102,4 @@ class DistilBERTEmbedder:
                 summed / counts
             )
 
-        return embedding.squeeze(0).cpu()
+        return embedding.cpu()

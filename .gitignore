@@ -1,23 +1,70 @@
+# ============================================================
+# PhishGuard AI - .gitignore
+# ============================================================
+
+# ──────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────
 .venv/
 venv/
 env/
-
-node_modules/
-frontend/node_modules/
-
 __pycache__/
 *.py[cod]
+*.pyo
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 
+# ──────────────────────────────────────────────
+# Node / Frontend
+# ──────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+
+# Lock files (optional: keep package-lock.json if you want reproducible installs)
+# package-lock.json
+# frontend/package-lock.json
+
+# ──────────────────────────────────────────────
+# Databases (runtime, generated)
+# ──────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
 
+# ──────────────────────────────────────────────
+# Environment files (secrets)
+# ──────────────────────────────────────────────
 .env
 .env.*
 !.env.example
+frontend/.env
+!frontend/.env.example
 
-dist/
-frontend/dist/
+# ──────────────────────────────────────────────
+# Large model / data files (use Git LFS or cloud storage)
+# ──────────────────────────────────────────────
+models/distilbert_gat/deployment/*.pt
+models/distilbert_gat/deployment/*.csv
+data/processed/*.csv
+data/database/*.db
+
+# ──────────────────────────────────────────────
+# Generated results & charts (reproducible from code)
+# ──────────────────────────────────────────────
+results/
+
+# ──────────────────────────────────────────────
+# OS / Editor artefacts
+# ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.log

@@ -10,63 +10,22 @@ from api.preprocessing import (
     create_model_text
 )
 from api.graph import ReferenceGraph
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-# ============================================================
-# PATHS
-# ============================================================
-
-BASE_DIR = Path(
-    "models/distilbert_gat/deployment"
+from api.config import (
+    MODEL_PATH,
+    GRAPH_PATH,
+    EMBEDDINGS_PATH,
+    REFERENCE_PATH,
+    TOKENIZER_PATH,
+    CLASSIFICATION_THRESHOLD,
+    RISK_MEDIUM_THRESHOLD,
+    RISK_HIGH_THRESHOLD,
+    RISK_CRITICAL_THRESHOLD
 )
-
-MODEL_PATH = (
-    BASE_DIR /
-    "distilbert_gat_best.pt"
-)
-
-GRAPH_PATH = (
-    BASE_DIR /
-    "graph_data.pt"
-)
-
-EMBEDDINGS_PATH = (
-    BASE_DIR /
-    "train_embeddings.pt"
-)
-
-REFERENCE_PATH = (
-    BASE_DIR /
-    "reference_emails.csv"
-)
-
-TOKENIZER_PATH = (
-    BASE_DIR /
-    "tokenizer"
-)
-
-
-# ============================================================
-# PRODUCTION CONFIGURATION
-# ============================================================
-
-# Validated operating threshold.
-#
-# probability >= 0.47 -> PHISHING
-# probability <  0.47 -> NON-PHISHING
-#
-# Do not change this during normal production inference.
-
-CLASSIFICATION_THRESHOLD = 0.47
-
-
-# ============================================================
-# RISK LEVEL CONFIGURATION
-# ============================================================
-
-RISK_MEDIUM_THRESHOLD = 0.47
-RISK_HIGH_THRESHOLD = 0.60
-RISK_CRITICAL_THRESHOLD = 0.80
 
 
 class PhishGuardPredictor:
@@ -167,184 +126,195 @@ class PhishGuardPredictor:
         body
     ):
 
-        # ----------------------------------------------------
-        # Step 1: Preprocess email
-        # ----------------------------------------------------
+        # Ensure strings and handle None gracefully
+        sender = str(sender) if sender is not None else ""
+        receiver = str(receiver) if receiver is not None else ""
+        subject = str(subject) if subject is not None else ""
+        body = str(body) if body is not None else ""
 
-        entities = preprocess_email(
-            sender=sender,
-            receiver=receiver,
-            subject=subject,
-            body=body
-        )
+        try:
+            # ----------------------------------------------------
+            # Step 1: Preprocess email
+            # ----------------------------------------------------
 
-        # ----------------------------------------------------
-        # Step 2: Create model input
-        # ----------------------------------------------------
-
-        text = create_model_text(
-            sender=sender,
-            receiver=receiver,
-            subject=subject,
-            body=body
-        )
-
-        # ----------------------------------------------------
-        # Step 3: DistilBERT embedding
-        # ----------------------------------------------------
-
-        embedding = (
-            self.embedder.create_embedding(
-                text
+            entities = preprocess_email(
+                sender=sender,
+                receiver=receiver,
+                subject=subject,
+                body=body
             )
-        )
 
-        # ----------------------------------------------------
-        # Step 4: Create local inference graph
-        # ----------------------------------------------------
+            # ----------------------------------------------------
+            # Step 2: Create model input
+            # ----------------------------------------------------
 
-        (
-            inference_graph,
-            neighbors,
-            edge_types
-        ) = self.reference_graph.create_inference_graph(
-            new_embedding=embedding,
-            sender=entities["sender_entity"],
-            receiver=entities["receiver_entity"],
-            domains=entities["domain_entities"]
-        )
+            text = create_model_text(
+                sender=sender,
+                receiver=receiver,
+                subject=subject,
+                body=body
+            )
 
-        # ----------------------------------------------------
-        # Step 5: Move graph to model device
-        # ----------------------------------------------------
+            # ----------------------------------------------------
+            # Step 3: DistilBERT embedding
+            # ----------------------------------------------------
 
-        x = inference_graph.x.to(
-            self.device
-        )
+            embedding = (
+                self.embedder.create_embedding(
+                    text
+                )
+            )
 
-        edge_index = (
-            inference_graph.edge_index.to(
+            # ----------------------------------------------------
+            # Step 4: Create local inference graph
+            # ----------------------------------------------------
+
+            (
+                inference_graph,
+                neighbors,
+                edge_types
+            ) = self.reference_graph.create_inference_graph(
+                new_embedding=embedding,
+                sender=entities["sender_entity"],
+                receiver=entities["receiver_entity"],
+                domains=entities["domain_entities"]
+            )
+
+            # ----------------------------------------------------
+            # Step 5: Move graph to model device
+            # ----------------------------------------------------
+
+            x = inference_graph.x.to(
                 self.device
             )
-        )
 
-        # ----------------------------------------------------
-        # Step 6: GAT inference
-        # ----------------------------------------------------
-
-        self.gat.eval()
-
-        with torch.no_grad():
-
-            logits = self.gat(
-                x,
-                edge_index
+            edge_index = (
+                inference_graph.edge_index.to(
+                    self.device
+                )
             )
 
-            # New email is always the final node.
-            new_node = (
-                inference_graph.num_nodes - 1
+            # ----------------------------------------------------
+            # Step 6: GAT inference
+            # ----------------------------------------------------
+
+            self.gat.eval()
+
+            with torch.no_grad():
+
+                logits = self.gat(
+                    x,
+                    edge_index
+                )
+
+                # New email is always the final node.
+                new_node = (
+                    inference_graph.num_nodes - 1
+                )
+
+                new_logits = (
+                    logits[new_node]
+                )
+
+                probabilities = F.softmax(
+                    new_logits,
+                    dim=0
+                )
+
+            # ----------------------------------------------------
+            # Step 7: Extract probabilities
+            # ----------------------------------------------------
+
+            non_phishing_probability = float(
+                probabilities[0].item()
             )
 
-            new_logits = (
-                logits[new_node]
+            phishing_probability = float(
+                probabilities[1].item()
             )
 
-            probabilities = F.softmax(
-                new_logits,
-                dim=0
+            # ----------------------------------------------------
+            # Step 8: Production classification
+            # ----------------------------------------------------
+
+            predicted_label = int(
+                phishing_probability
+                >= CLASSIFICATION_THRESHOLD
             )
 
-        # ----------------------------------------------------
-        # Step 7: Extract probabilities
-        # ----------------------------------------------------
+            if predicted_label == 1:
 
-        non_phishing_probability = float(
-            probabilities[0].item()
-        )
+                label = "PHISHING"
 
-        phishing_probability = float(
-            probabilities[1].item()
-        )
+            else:
 
-        # ----------------------------------------------------
-        # Step 8: Production classification
-        # ----------------------------------------------------
+                label = "NON-PHISHING"
 
-        predicted_label = int(
-            phishing_probability
-            >= CLASSIFICATION_THRESHOLD
-        )
+            # ----------------------------------------------------
+            # Step 9: Risk score
+            # ----------------------------------------------------
 
-        if predicted_label == 1:
+            risk_score = (
+                phishing_probability * 100.0
+            )
 
-            label = "PHISHING"
+            # ----------------------------------------------------
+            # Step 10: Risk level
+            # ----------------------------------------------------
 
-        else:
+            risk_level = self.get_risk_level(
+                phishing_probability
+            )
 
-            label = "NON-PHISHING"
+            # ----------------------------------------------------
+            # Step 11: Return production response
+            # ----------------------------------------------------
 
-        # ----------------------------------------------------
-        # Step 9: Risk score
-        # ----------------------------------------------------
+            return {
 
-        risk_score = (
-            phishing_probability * 100.0
-        )
+                "label":
+                    label,
 
-        # ----------------------------------------------------
-        # Step 10: Risk level
-        # ----------------------------------------------------
+                "predicted_class":
+                    predicted_label,
 
-        risk_level = self.get_risk_level(
-            phishing_probability
-        )
+                "classification_threshold":
+                    CLASSIFICATION_THRESHOLD,
 
-        # ----------------------------------------------------
-        # Step 11: Return production response
-        # ----------------------------------------------------
+                "phishing_probability":
+                    phishing_probability,
 
-        return {
+                "non_phishing_probability":
+                    non_phishing_probability,
 
-            "label":
-                label,
+                "risk_score":
+                    risk_score,
 
-            "predicted_class":
-                predicted_label,
+                "risk_level":
+                    risk_level,
 
-            "classification_threshold":
-                CLASSIFICATION_THRESHOLD,
+                "graph_neighbors":
+                    len(neighbors),
 
-            "phishing_probability":
-                phishing_probability,
+                "graph_edge_types":
+                    edge_types,
 
-            "non_phishing_probability":
-                non_phishing_probability,
+                "sender_entity":
+                    entities[
+                        "sender_entity"
+                    ],
 
-            "risk_score":
-                risk_score,
+                "receiver_entity":
+                    entities[
+                        "receiver_entity"
+                    ],
 
-            "risk_level":
-                risk_level,
+                "domain_entities":
+                    entities[
+                        "domain_entities"
+                    ]
+            }
 
-            "graph_neighbors":
-                len(neighbors),
-
-            "graph_edge_types":
-                edge_types,
-
-            "sender_entity":
-                entities[
-                    "sender_entity"
-                ],
-
-            "receiver_entity":
-                entities[
-                    "receiver_entity"
-                ],
-
-            "domain_entities":
-                entities[
-                    "domain_entities"
-                ]
-        }
+        except Exception as e:
+            logger.error(f"Prediction failed for request involving sender {hash(sender)} and receiver {hash(receiver)}. Error: {str(e)}")
+            raise

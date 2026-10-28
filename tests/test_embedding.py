@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from embedding import DistilBERTEmbedder
-from preprocessing import create_model_text
+from api.embedding import DistilBERTEmbedder
+from api.preprocessing import create_model_text
 
 
 TOKENIZER_PATH = Path(
@@ -56,10 +56,10 @@ print("\nFirst 10 values:")
 print(embedding[:10])
 
 
-assert embedding.shape == (768,)
+assert embedding.shape == (1, 768)
 
 
 print(
-    "\n✓ Mean-pooled DistilBERT embedding "
+    "\n[OK] Mean-pooled DistilBERT embedding "
     "created successfully."
 )

@@ -1,9 +1,9 @@
 export default function StatCard({ title, value, subtitle }) {
   return (
-    <div className="stat-card">
-      <h3>{title}</h3>
-      <div className="stat-value">{value}</div>
-      {subtitle && <p>{subtitle}</p>}
+    <div className="glass-card">
+      <div className="stat-card-header">{title}</div>
+      <div className="stat-card-value">{value}</div>
+      {subtitle && <div className="stat-card-subtitle">{subtitle}</div>}
     </div>
   );
 }

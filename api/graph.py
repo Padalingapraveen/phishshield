@@ -58,7 +58,7 @@ class ReferenceGraph:
 
         self._build_entity_maps()
 
-        print("✓ Reference graph ready.")
+        print("[OK] Reference graph ready.")
 
     # =========================================================
     # EMAIL EXTRACTION

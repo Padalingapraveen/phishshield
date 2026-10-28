@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 
-from graph import ReferenceGraph
+from api.graph import ReferenceGraph
 
 
 BASE = Path(
@@ -108,4 +108,4 @@ print(
     inference_graph.edge_index.shape[1]
 )
 
-print("\n✓ Graph inference construction works.")
+print("\n[OK] Graph inference construction works.")

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PhishGuard AI</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="header">
+        <h1>PhishGuard AI</h1>
+        <div class="subtitle">SOC Protection Active</div>
+    </div>
+
+    <div class="content">
+        <!-- Login Section -->
+        <div id="login-section" class="hidden">
+            <h2 style="font-size: 16px; margin-top: 0;">Login Required</h2>
+            <p style="font-size: 13px; color: #718096; margin-bottom: 12px;">Please authenticate with PhishGuard AI.</p>
+            <input type="text" id="login-username" placeholder="Username" class="input-field" value="admin">
+            <input type="password" id="login-password" placeholder="Password" class="input-field" value="adminpassword">
+            <button id="login-btn" class="btn primary" style="margin-top: 10px;">Login</button>
+            <div id="login-error" class="hidden alert error"></div>
+        </div>
+
+        <!-- Main Section -->
+        <div id="main-section" class="hidden">
+            <button id="analyze-btn" class="btn primary">Analyze Email</button>
+            <button id="logout-btn" class="btn secondary" style="margin-top: 8px;">Logout</button>
+            
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Analyzing email...</p>
+            </div>
+
+            <div id="error" class="hidden alert error"></div>
+
+        <div id="result" class="hidden">
+            <div id="classification-badge" class="badge"></div>
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Probability</div>
+                    <div class="stat-value" id="val-prob"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Risk Score</div>
+                    <div class="stat-value" id="val-score"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Risk Level</div>
+                    <div class="stat-value" id="val-level"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Graph Neighbors</div>
+                    <div class="stat-value" id="val-neighbors"></div>
+                </div>
+            </div>
+
+            <div class="details">
+                <div class="detail-row">
+                    <span class="detail-label">Sender Entity:</span>
+                    <span class="detail-val" id="val-sender-entity"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Receiver Entity:</span>
+                    <span class="detail-val" id="val-receiver-entity"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

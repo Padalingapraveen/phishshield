@@ -13,6 +13,8 @@ class DetectionEvent(Base):
         primary_key=True,
         index=True
     )
+    
+    user_id = Column(Integer, index=True, nullable=True) # References User.id
 
     timestamp = Column(
         DateTime,
@@ -57,3 +59,12 @@ class DetectionEvent(Base):
     receiver_entity = Column(Text)
 
     domain_entities = Column(Text)
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(100), nullable=False)
+    role = Column(String(20), nullable=False, default="user") # "admin" or "user"
+    is_active = Column(Integer, default=1)

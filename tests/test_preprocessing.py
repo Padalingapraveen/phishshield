@@ -1,4 +1,6 @@
-from preprocessing import (
+from api.preprocessing import (
+    extract_email_entity,
+    extract_domain_entities,
     preprocess_email,
     create_model_text
 )
